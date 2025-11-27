@@ -1,0 +1,9 @@
+# Java / Maven Exclusions
+# ------------------
+/server/target/        # Compiled Java files
+# IDE files
+.idea/
+*.iml
+# Security/Secrets (ALWAYS ignore)
+/server/src/main/resources/application.properties
+.env
