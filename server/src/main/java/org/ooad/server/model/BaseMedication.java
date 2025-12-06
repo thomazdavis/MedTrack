@@ -23,7 +23,9 @@ public class BaseMedication implements Medication {
     public BaseMedication(String name, String dosageForm) {
         this.name = name;
         this.dosageForm = dosageForm;
-        this.nextDueTime = LocalDateTime.now().plusHours(8);
+        // FIX: Set due time to 10 seconds from now, not 8 hours,
+        // so the ReminderSystem (Observer) triggers almost instantly.
+        this.nextDueTime = LocalDateTime.now().plusSeconds(10);
     }
 
     @Override

@@ -229,11 +229,12 @@
             padding: 16px;
             border-radius: 8px;
             margin-bottom: 20px;
-            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
         }
 
         .alert.show {
-            display: block;
+            opacity: 1;
         }
 
         .alert.error {
@@ -313,11 +314,6 @@
             padding: 12px 20px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: none;
-        }
-
-        .connection-status.show {
-            display: block;
         }
     </style>
 </head>
@@ -356,7 +352,7 @@
                 <div class="form-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="foodSensitive" name="foodSensitive">
-                        <label for="foodSensitive" style="margin-bottom: 0;">Food Sensitive (Take with food)</label>
+                        <label for="foodSensitive" style="margin-bottom: 0;">Food Sensitive (Decorator Pattern)</label>
                     </div>
                 </div>
 
@@ -366,7 +362,7 @@
 
         <!-- Medications List Card -->
         <div class="card">
-            <h2><span class="icon">📋</span> My Medications</h2>
+            <h2><span class="icon">📋</span> My Medications (Observer & Command Test)</h2>
             <div id="medicationsList" class="med-list">
                 <div class="loading">
                     <div class="spinner"></div>
@@ -379,7 +375,7 @@
 
 <div id="connectionStatus" class="connection-status">
     <span class="status-indicator status-due"></span>
-    <span>Connecting to server...</span>
+    <span id="connectionMessage">Connecting to server...</span>
 </div>
 
 <script>
@@ -387,7 +383,6 @@
     let medications = [];
     let pollingInterval = null;
 
-    // Initialize app
     document.addEventListener('DOMContentLoaded', () => {
         loadMedications();
         setupEventListeners();
@@ -399,23 +394,26 @@
     }
 
     function startPolling() {
-        // Poll for medications every 10 seconds to stay in sync with backend reminders
+        // Poll for medications every 5 seconds to catch backend reminders quickly
         pollingInterval = setInterval(() => {
             loadMedications();
-        }, 10000);
+        }, 5000);
     }
 
     async function loadMedications() {
         try {
+            // Update connection status
+            showConnectionStatus('Attempting connection...', 'warning');
+
             const response = await fetch(`${API_BASE}/medications`);
             if (!response.ok) throw new Error('Failed to fetch medications');
 
             medications = await response.json();
             renderMedications();
-            hideConnectionStatus();
+            showConnectionStatus('Connected', 'success');
         } catch (error) {
             console.error('Error loading medications:', error);
-            showConnectionStatus('Unable to connect to server');
+            showConnectionStatus('Disconnected: Server not reachable (Try running ./mvnw spring-boot:run)', 'error');
             renderError();
         }
     }
@@ -435,73 +433,80 @@
 
             if (!response.ok) throw new Error('Failed to add medication');
 
+            // Strategy Pattern Check: We assume the backend logs the critical interaction,
+            // but for frontend feedback, we re-run a simplified check here
+            // to show the Strategy pattern visually (even though the definitive check is server-side).
             const newMed = await response.json();
+            const serverSideInteraction = checkClientInteractions(newMed);
 
-            // Check for interactions
-            checkInteractions(newMed);
+            if (serverSideInteraction) {
+                showAlert(serverSideInteraction, 'error');
+            } else {
+                showAlert('Medication added successfully!', 'success');
+            }
 
-            showAlert('Medication added successfully!', 'success');
             e.target.reset();
             await loadMedications();
         } catch (error) {
             console.error('Error adding medication:', error);
-            showAlert('Failed to add medication. Please try again.', 'error');
+            showAlert('Failed to add medication. Please ensure the backend is running.', 'error');
         }
     }
 
+    // Client-side simulation of the Strategy Pattern (for visual feedback)
+    function checkClientInteractions(newMed) {
+        const newName = newMed.name.toLowerCase();
+
+        for (const existing of medications) {
+            const existingName = existing.name.toLowerCase();
+
+            // Rule 1: Aspirin and Warfarin (matches StandardInteractionStrategy.java)
+            if ((newName.includes('aspirin') && existingName.includes('warfarin')) ||
+                (newName.includes('warfarin') && existingName.includes('aspirin'))) {
+                return `⚠️ CRITICAL INTERACTION: ${newMed.name} and ${existing.name} may cause bleeding risks! (Strategy Check)`;
+            }
+
+            // Rule 2: Cipro and Food Sensitive (matches StandardInteractionStrategy.java)
+            if (newName.includes('cipro') && existing.attributes?.includes('Food Sensitive')) {
+                return `⚠️ Interaction Warning: ${newMed.name} might interact with food-sensitive med ${existing.name}. (Strategy Check)`;
+            }
+        }
+        return null;
+    }
+
+    // Command Pattern Execution
     async function takeMedication(id, name) {
         try {
             const response = await fetch(`${API_BASE}/medications/${id}/take`, {
                 method: 'POST'
             });
 
-            if (!response.ok) throw new Error('Failed to take medication');
+            if (!response.ok) throw new Error('Failed to execute TAKE command');
 
-            showAlert(`✅ ${name} marked as taken!`, 'success');
+            // Command executes on backend, updating schedule. Polling refreshes UI.
+            showAlert(`✅ ${name} marked as taken! Schedule advanced (Command Pattern).`, 'success');
             await loadMedications();
         } catch (error) {
             console.error('Error taking medication:', error);
-            showAlert('Failed to record medication. Please try again.', 'error');
+            showAlert('Failed to record medication. Please check connection.', 'error');
         }
     }
 
+    // Command Pattern Execution
     async function snoozeMedication(id, name) {
         try {
             const response = await fetch(`${API_BASE}/medications/${id}/snooze`, {
                 method: 'POST'
             });
 
-            if (!response.ok) throw new Error('Failed to snooze medication');
+            if (!response.ok) throw new Error('Failed to execute SNOOZE command');
 
-            showAlert(`⏰ ${name} snoozed for later`, 'warning');
+            // Command executes on backend, updating schedule. Polling refreshes UI.
+            showAlert(`⏰ ${name} snoozed for 15 minutes (Command Pattern).`, 'warning');
             await loadMedications();
         } catch (error) {
             console.error('Error snoozing medication:', error);
-            showAlert('Failed to snooze medication. Please try again.', 'error');
-        }
-    }
-
-    function checkInteractions(newMed) {
-        const interactions = [];
-        const newName = newMed.name.toLowerCase();
-
-        medications.forEach(existing => {
-            const existingName = existing.name.toLowerCase();
-
-            // Check for blood thinner interaction
-            if ((newName.includes('aspirin') && existingName.includes('warfarin')) ||
-                (newName.includes('warfarin') && existingName.includes('aspirin'))) {
-                interactions.push(`⚠️ CRITICAL: ${newMed.name} and ${existing.name} may cause bleeding risks!`);
-            }
-
-            // Check for food-sensitive interactions
-            if (newName.includes('cipro') && existing.attributes?.includes('Food Sensitive')) {
-                interactions.push(`⚠️ ${newMed.name} might interact with food/supplements associated with ${existing.name}`);
-            }
-        });
-
-        if (interactions.length > 0) {
-            interactions.forEach(warning => showAlert(warning, 'error'));
+            showAlert('Failed to snooze medication. Please check connection.', 'error');
         }
     }
 
@@ -537,9 +542,9 @@
                                 <div class="med-form">${med.dosageForm}</div>
                             </div>
                         </div>
-                        ${med.attributes !== 'Standard' ? `<div class="med-attributes">${med.attributes}</div>` : ''}
+                        ${med.attributes && med.attributes !== 'Standard' ? `<div class="med-attributes">${med.attributes}</div>` : ''}
                         <div class="med-time">
-                            ${isDue ? '🔔 DUE NOW' : `⏱️ Next dose: ${timeStr}`}
+                            ${isDue ? '🔔 DUE NOW (Observer Event)' : `⏱️ Next dose: ${timeStr}`}
                         </div>
                         <div class="med-actions">
                             <button class="action-btn take-btn" onclick="takeMedication(${med.id}, '${med.name}')">
@@ -560,7 +565,7 @@
                 <div class="empty-state">
                     <div class="icon">⚠️</div>
                     <p>Unable to load medications</p>
-                    <p style="font-size: 0.9em; margin-top: 8px;">Please check your connection</p>
+                    <p style="font-size: 0.9em; margin-top: 8px;">Please check your backend connection (http://localhost:8080)</p>
                 </div>
             `;
     }
@@ -595,27 +600,37 @@
         alert.className = `alert ${type}`;
         alert.innerHTML = message;
 
-        container.appendChild(alert);
+        container.prepend(alert);
 
         // Trigger reflow for animation
         setTimeout(() => alert.classList.add('show'), 10);
 
-        // Auto-remove after 5 seconds
+        // Auto-remove after 6 seconds
         setTimeout(() => {
             alert.classList.remove('show');
             setTimeout(() => alert.remove(), 300);
-        }, 5000);
+        }, 6000);
     }
 
-    function showConnectionStatus(message) {
+    function showConnectionStatus(message, type) {
         const status = document.getElementById('connectionStatus');
-        status.querySelector('span:last-child').textContent = message;
-        status.classList.add('show');
-    }
+        const indicator = status.querySelector('.status-indicator');
+        const messageSpan = document.getElementById('connectionMessage');
 
-    function hideConnectionStatus() {
-        const status = document.getElementById('connectionStatus');
-        status.classList.remove('show');
+        status.classList.remove('success', 'warning', 'error');
+        indicator.className = 'status-indicator';
+
+        if (type === 'success') {
+            status.classList.add('success');
+            indicator.classList.add('status-upcoming');
+        } else if (type === 'error') {
+            status.classList.add('error');
+            indicator.classList.add('status-due');
+        } else {
+            indicator.style.backgroundColor = '#ccc';
+        }
+
+        messageSpan.textContent = message;
     }
 
     // Clean up on page unload
