@@ -4,83 +4,83 @@ import org.ooad.server.factory.MedicationFactory;
 import org.ooad.server.model.BaseMedication;
 import org.ooad.server.model.Medication;
 import org.ooad.server.repository.MedicationRepository;
+import org.ooad.server.strategy.InteractionStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * Service Layer for Medication operations.
- * Uses Dependency Injection for the Factory and Repository abstractions.
- * This is where the business logic resides.
- */
 @Service
 public class MedicationService {
 
     private final MedicationRepository medicationRepository;
     private final MedicationFactory medicationFactory;
-    // We will inject the ReminderSystem here to link medication creation/updates to the reminder logic
-    // private final ReminderSystem reminderSystem; // To be added later
+    private final InteractionStrategy interactionStrategy;
 
     @Autowired
-    public MedicationService(
-            MedicationRepository medicationRepository,
-            MedicationFactory medicationFactory
-            // ReminderSystem reminderSystem // To be added later
-    ) {
+    public MedicationService(MedicationRepository medicationRepository,
+                             MedicationFactory medicationFactory,
+                             InteractionStrategy interactionStrategy) {
         this.medicationRepository = medicationRepository;
         this.medicationFactory = medicationFactory;
-        // this.reminderSystem = reminderSystem;
+        this.interactionStrategy = interactionStrategy;
     }
 
-    /**
-     * Creates and saves a new medication, using the Factory Method and Decorator patterns.
-     * @param name Name of the medication.
-     * @param dosageForm Dosage form.
-     * @param isFoodSensitive Whether it needs the food sensitive decorator.
-     * @return The persisted BaseMedication entity.
-     */
     public BaseMedication addMedication(String name, String dosageForm, boolean isFoodSensitive) {
-        // Use the Factory Method to create the appropriate decorated Medication instance (coding to abstraction)
+        // Create decorated medication
         Medication medication = medicationFactory.createMedication(name, dosageForm, isFoodSensitive);
 
-        // We can't persist the decorated object directly. We need to extract the BaseMedication.
-        // For our current simple Decorator structure, the BaseMedication is the component.
-        // We ensure the Factory returns BaseMedication if no decorators were applied,
-        // or we use casting/utility to get the underlying BaseMedication from the decorated chain.
-        // For simplicity, we assume the factory ensures the underlying object is a BaseMedication
-        // that has the persistence annotations.
+        // Check for interactions (Strategy Pattern)
+        List<BaseMedication> existingEntities = medicationRepository.findAll();
+        // Convert entities to Medication interface list for the strategy
+        List<Medication> existingMeds = existingEntities.stream()
+                .map(m -> (Medication) m)
+                .collect(Collectors.toList());
+
+        String warning = interactionStrategy.checkInteraction(medication, existingMeds);
+        if (warning != null) {
+            System.err.println("WARNING: " + warning);
+        }
+
+        // Persist
+        // Extract data from the decorated object to save the entity
         BaseMedication baseMedication;
         if (medication instanceof BaseMedication) {
             baseMedication = (BaseMedication) medication;
         } else {
-            // NOTE: In a robust implementation, the decorator must hold a reference to the
-            // original BaseMedication object, and we'd traverse the decorators to find it.
-            // For now, let's assume the factory returns an instance we can save.
-            // Since BaseMedication is the only @Entity, we'll save it.
-            // We need to slightly adjust our factory to always return the savable BaseMedication
-            // or modify the decorator structure to pass persistence duties.
-            // For now, we will save a NEW BaseMedication with the data. (This is a simplified persistence approach).
             baseMedication = new BaseMedication(medication.getName(), medication.getDosageForm());
             baseMedication.setNextDueTime(medication.getNextDueTime());
-            // In a real scenario, we'd also need to persist the attributes (decorations)
         }
 
-        // Save the base entity
-        BaseMedication savedMedication = medicationRepository.save(baseMedication);
-
-        // In a later step, we'd register this medication with the ReminderSystem
-        // reminderSystem.addMedication(savedMedication);
-
-        System.out.println("New medication saved. Attributes: " + medication.getAttributes());
-        return savedMedication;
+        BaseMedication saved = medicationRepository.save(baseMedication);
+        System.out.println("Saved medication: " + saved.getName() + " [" + medication.getAttributes() + "]");
+        return saved;
     }
 
-    /**
-     * Retrieves all medications.
-     * @return List of all BaseMedication entities.
-     */
     public List<BaseMedication> getAllMedications() {
         return medicationRepository.findAll();
+    }
+
+    public void takeMedication(Long id) {
+        Optional<BaseMedication> medOpt = medicationRepository.findById(id);
+        if (medOpt.isPresent()) {
+            BaseMedication med = medOpt.get();
+            System.out.println("Taking medication: " + med.getName());
+            med.setNextDueTime(LocalDateTime.now().plusHours(24)); // Advance 24h
+            medicationRepository.save(med);
+        }
+    }
+
+    public void snoozeMedication(Long id) {
+        Optional<BaseMedication> medOpt = medicationRepository.findById(id);
+        if (medOpt.isPresent()) {
+            BaseMedication med = medOpt.get();
+            System.out.println("Snoozing medication: " + med.getName());
+            med.setNextDueTime(LocalDateTime.now().plusMinutes(15)); // Advance 15m
+            medicationRepository.save(med);
+        }
     }
 }
