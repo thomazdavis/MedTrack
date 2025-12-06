@@ -18,7 +18,6 @@ public abstract class MedicationDecorator implements Medication {
         this.decoratedMedication = decoratedMedication;
     }
 
-    // Forwarding methods to the decorated object (or the next decorator)
     @Override
     public Long getId() {
         return decoratedMedication.getId();
@@ -39,7 +38,6 @@ public abstract class MedicationDecorator implements Medication {
         return decoratedMedication.getNextDueTime();
     }
 
-    // Abstract method to be implemented by concrete decorators
     @Override
     public abstract String getAttributes();
 }

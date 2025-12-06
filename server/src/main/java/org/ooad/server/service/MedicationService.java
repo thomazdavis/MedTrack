@@ -29,7 +29,6 @@ public class MedicationService {
         this.interactionStrategy = interactionStrategy;
     }
 
-    // Updated to accept dosagesPerDay
     public BaseMedication addMedication(String name, String dosageForm, boolean isFoodSensitive, int dosagesPerDay) {
         Medication medication = medicationFactory.createMedication(name, dosageForm, isFoodSensitive);
 
@@ -51,7 +50,6 @@ public class MedicationService {
             baseMedication.setNextDueTime(medication.getNextDueTime());
         }
 
-        // Ensure dosagesPerDay is set if it came from a factory that didn't set it
         baseMedication.setDosagesPerDay(dosagesPerDay);
 
         BaseMedication saved = medicationRepository.save(baseMedication);
@@ -88,14 +86,12 @@ public class MedicationService {
         return medicationRepository.findAll();
     }
 
-    // Updated Take Command logic to use dosagesPerDay
     public void takeMedication(Long id) {
         Optional<BaseMedication> medOpt = medicationRepository.findById(id);
         if (medOpt.isPresent()) {
             BaseMedication med = medOpt.get();
             System.out.println("Taking medication: " + med.getName());
 
-            // Calculate interval based on dosages per day (24 hours / dosages)
             int hoursInterval = 24 / Math.max(1, med.getDosagesPerDay());
 
             med.setNextDueTime(LocalDateTime.now().plusHours(hoursInterval));

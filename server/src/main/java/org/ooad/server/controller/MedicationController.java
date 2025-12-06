@@ -32,7 +32,6 @@ public class MedicationController {
         return medicationService.getAllMedications();
     }
 
-    // Updated to accept dosagesPerDay
     @PostMapping
     public BaseMedication addMedication(@RequestParam String name,
                                         @RequestParam String dosageForm,
@@ -41,7 +40,6 @@ public class MedicationController {
         return medicationService.addMedication(name, dosageForm, foodSensitive, dosagesPerDay);
     }
 
-    // Updated to accept dosagesPerDay
     @PutMapping("/{id}")
     public ResponseEntity<BaseMedication> updateMedication(@PathVariable Long id,
                                                            @RequestParam String name,

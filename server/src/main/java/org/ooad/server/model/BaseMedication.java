@@ -17,7 +17,6 @@ public class BaseMedication implements Medication {
     private String dosageForm;
     private LocalDateTime nextDueTime;
 
-    // Feature: Dosages per day (Default 1)
     private int dosagesPerDay = 1;
 
     public BaseMedication() {}
@@ -26,11 +25,9 @@ public class BaseMedication implements Medication {
         this.name = name;
         this.dosageForm = dosageForm;
         this.dosagesPerDay = dosagesPerDay;
-        // Default: due in 10 seconds for demo purposes
         this.nextDueTime = LocalDateTime.now().plusSeconds(10);
     }
 
-    // Compatibility constructor
     public BaseMedication(String name, String dosageForm) {
         this(name, dosageForm, 1);
     }

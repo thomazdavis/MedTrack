@@ -14,8 +14,7 @@ import org.springframework.stereotype.Component;
 public class SimpleMedicationFactory implements MedicationFactory {
 
     /**
-     * Factory method implementation.
-     * Creates a BaseMedication and wraps it with appropriate decorators.
+     * Factory method
      */
     @Override
     public Medication createMedication(String name, String dosageForm, boolean isFoodSensitive) {
