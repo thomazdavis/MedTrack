@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedTrack - Smart Medication Reminder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 968px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .med-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .med-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
+        }
+
+        .med-item:hover {
+            transform: translateX(4px);
+        }
+
+        .med-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .med-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .med-form {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .med-attributes {
+            background: #fff3cd;
+            color: #856404;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            margin: 8px 0;
+            display: inline-block;
+        }
+
+        .med-time {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 12px;
+        }
+
+        .med-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .take-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .take-btn:hover {
+            background: #218838;
+        }
+
+        .snooze-btn {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .snooze-btn:hover {
+            background: #e0a800;
+        }
+
+        .alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .alert.warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state .icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-due {
+            background: #dc3545;
+            animation: pulse 2s infinite;
+        }
+
+        .status-upcoming {
+            background: #28a745;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+        }
+
+        .connection-status.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>💊 MedTrack</h1>
+        <p class="subtitle">Smart Medication Reminder & Interaction Checker</p>
+    </header>
+
+    <div id="alertContainer"></div>
+
+    <div class="main-grid">
+        <!-- Add Medication Card -->
+        <div class="card">
+            <h2><span class="icon">➕</span> Add Medication</h2>
+            <form id="addMedicationForm">
+                <div class="form-group">
+                    <label for="medName">Medication Name</label>
+                    <input type="text" id="medName" name="name" required placeholder="e.g., Aspirin, Lipitor">
+                </div>
+
+                <div class="form-group">
+                    <label for="dosageForm">Dosage Form</label>
+                    <select id="dosageForm" name="dosageForm" required>
+                        <option value="">Select form...</option>
+                        <option value="Tablet">Tablet</option>
+                        <option value="Capsule">Capsule</option>
+                        <option value="Liquid">Liquid</option>
+                        <option value="Injection">Injection</option>
+                        <option value="Topical">Topical</option>
+                        <option value="Inhaler">Inhaler</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="foodSensitive" name="foodSensitive">
+                        <label for="foodSensitive" style="margin-bottom: 0;">Food Sensitive (Take with food)</label>
+                    </div>
+                </div>
+
+                <button type="submit">Add Medication</button>
+            </form>
+        </div>
+
+        <!-- Medications List Card -->
+        <div class="card">
+            <h2><span class="icon">📋</span> My Medications</h2>
+            <div id="medicationsList" class="med-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading medications...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="connectionStatus" class="connection-status">
+    <span class="status-indicator status-due"></span>
+    <span>Connecting to server...</span>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:8080/api';
+    let medications = [];
+    let pollingInterval = null;
+
+    // Initialize app
+    document.addEventListener('DOMContentLoaded', () => {
+        loadMedications();
+        setupEventListeners();
+        startPolling();
+    });
+
+    function setupEventListeners() {
+        document.getElementById('addMedicationForm').addEventListener('submit', handleAddMedication);
+    }
+
+    function startPolling() {
+        // Poll for medications every 10 seconds to stay in sync with backend reminders
+        pollingInterval = setInterval(() => {
+            loadMedications();
+        }, 10000);
+    }
+
+    async function loadMedications() {
+        try {
+            const response = await fetch(`${API_BASE}/medications`);
+            if (!response.ok) throw new Error('Failed to fetch medications');
+
+            medications = await response.json();
+            renderMedications();
+            hideConnectionStatus();
+        } catch (error) {
+            console.error('Error loading medications:', error);
+            showConnectionStatus('Unable to connect to server');
+            renderError();
+        }
+    }
+
+    async function handleAddMedication(e) {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const name = formData.get('name');
+        const dosageForm = formData.get('dosageForm');
+        const foodSensitive = document.getElementById('foodSensitive').checked;
+
+        try {
+            const response = await fetch(`${API_BASE}/medications?name=${encodeURIComponent(name)}&dosageForm=${encodeURIComponent(dosageForm)}&foodSensitive=${foodSensitive}`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) throw new Error('Failed to add medication');
+
+            const newMed = await response.json();
+
+            // Check for interactions
+            checkInteractions(newMed);
+
+            showAlert('Medication added successfully!', 'success');
+            e.target.reset();
+            await loadMedications();
+        } catch (error) {
+            console.error('Error adding medication:', error);
+            showAlert('Failed to add medication. Please try again.', 'error');
+        }
+    }
+
+    async function takeMedication(id, name) {
+        try {
+            const response = await fetch(`${API_BASE}/medications/${id}/take`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) throw new Error('Failed to take medication');
+
+            showAlert(`✅ ${name} marked as taken!`, 'success');
+            await loadMedications();
+        } catch (error) {
+            console.error('Error taking medication:', error);
+            showAlert('Failed to record medication. Please try again.', 'error');
+        }
+    }
+
+    async function snoozeMedication(id, name) {
+        try {
+            const response = await fetch(`${API_BASE}/medications/${id}/snooze`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) throw new Error('Failed to snooze medication');
+
+            showAlert(`⏰ ${name} snoozed for later`, 'warning');
+            await loadMedications();
+        } catch (error) {
+            console.error('Error snoozing medication:', error);
+            showAlert('Failed to snooze medication. Please try again.', 'error');
+        }
+    }
+
+    function checkInteractions(newMed) {
+        const interactions = [];
+        const newName = newMed.name.toLowerCase();
+
+        medications.forEach(existing => {
+            const existingName = existing.name.toLowerCase();
+
+            // Check for blood thinner interaction
+            if ((newName.includes('aspirin') && existingName.includes('warfarin')) ||
+                (newName.includes('warfarin') && existingName.includes('aspirin'))) {
+                interactions.push(`⚠️ CRITICAL: ${newMed.name} and ${existing.name} may cause bleeding risks!`);
+            }
+
+            // Check for food-sensitive interactions
+            if (newName.includes('cipro') && existing.attributes?.includes('Food Sensitive')) {
+                interactions.push(`⚠️ ${newMed.name} might interact with food/supplements associated with ${existing.name}`);
+            }
+        });
+
+        if (interactions.length > 0) {
+            interactions.forEach(warning => showAlert(warning, 'error'));
+        }
+    }
+
+    function renderMedications() {
+        const container = document.getElementById('medicationsList');
+
+        if (medications.length === 0) {
+            container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">💊</div>
+                        <p>No medications added yet</p>
+                        <p style="font-size: 0.9em; margin-top: 8px;">Add your first medication to get started</p>
+                    </div>
+                `;
+            return;
+        }
+
+        const now = new Date();
+
+        container.innerHTML = medications.map(med => {
+            const dueTime = new Date(med.nextDueTime);
+            const isDue = dueTime <= now;
+            const timeStr = formatTimeUntil(dueTime);
+
+            return `
+                    <div class="med-item">
+                        <div class="med-header">
+                            <div>
+                                <div class="med-name">
+                                    <span class="status-indicator ${isDue ? 'status-due' : 'status-upcoming'}"></span>
+                                    ${med.name}
+                                </div>
+                                <div class="med-form">${med.dosageForm}</div>
+                            </div>
+                        </div>
+                        ${med.attributes !== 'Standard' ? `<div class="med-attributes">${med.attributes}</div>` : ''}
+                        <div class="med-time">
+                            ${isDue ? '🔔 DUE NOW' : `⏱️ Next dose: ${timeStr}`}
+                        </div>
+                        <div class="med-actions">
+                            <button class="action-btn take-btn" onclick="takeMedication(${med.id}, '${med.name}')">
+                                ✓ Take
+                            </button>
+                            <button class="action-btn snooze-btn" onclick="snoozeMedication(${med.id}, '${med.name}')">
+                                ⏰ Snooze
+                            </button>
+                        </div>
+                    </div>
+                `;
+        }).join('');
+    }
+
+    function renderError() {
+        const container = document.getElementById('medicationsList');
+        container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">⚠️</div>
+                    <p>Unable to load medications</p>
+                    <p style="font-size: 0.9em; margin-top: 8px;">Please check your connection</p>
+                </div>
+            `;
+    }
+
+    function formatTimeUntil(date) {
+        const now = new Date();
+        const diff = date - now;
+
+        if (diff < 0) return 'Overdue';
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (hours > 24) {
+            const days = Math.floor(hours / 24);
+            return `in ${days} day${days !== 1 ? 's' : ''}`;
+        }
+
+        if (hours > 0) {
+            return `in ${hours}h ${minutes}m`;
+        }
+
+        return `in ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    }
+
+    function showAlert(message, type = 'info') {
+        const container = document.getElementById('alertContainer');
+        const alertId = 'alert-' + Date.now();
+
+        const alert = document.createElement('div');
+        alert.id = alertId;
+        alert.className = `alert ${type}`;
+        alert.innerHTML = message;
+
+        container.appendChild(alert);
+
+        // Trigger reflow for animation
+        setTimeout(() => alert.classList.add('show'), 10);
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            alert.classList.remove('show');
+            setTimeout(() => alert.remove(), 300);
+        }, 5000);
+    }
+
+    function showConnectionStatus(message) {
+        const status = document.getElementById('connectionStatus');
+        status.querySelector('span:last-child').textContent = message;
+        status.classList.add('show');
+    }
+
+    function hideConnectionStatus() {
+        const status = document.getElementById('connectionStatus');
+        status.classList.remove('show');
+    }
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+    });
+</script>
+</body>
+</html>
