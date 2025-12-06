@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MedTrack - Smart Medication Reminder</title>
     <style>
-        /* Base Styles and Typography */
+        /* (Styles remain mostly same, adding style for small text in timer) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -36,7 +36,7 @@
             border-radius: 16px;
             padding: 24px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-            position: relative; /* For modal centering */
+            position: relative;
         }
         .card h2 {
             color: #4b6cb7;
@@ -52,7 +52,7 @@
         /* Form Elements */
         .form-group { margin-bottom: 16px; }
         label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9em; color: #555; }
-        input[type="text"], input[type="password"], select {
+        input[type="text"], input[type="password"], input[type="number"], select {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
@@ -60,7 +60,7 @@
             font-size: 15px;
             transition: border-color 0.3s;
         }
-        input[type="text"]:focus, input[type="password"]:focus, select:focus { outline: none; border-color: #4b6cb7; box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.2); }
+        input:focus, select:focus { outline: none; border-color: #4b6cb7; box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.2); }
         .checkbox-group { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
         input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
 
@@ -95,7 +95,7 @@
             gap: 15px;
             max-height: 500px;
             overflow-y: auto;
-            padding-right: 5px; /* Space for scrollbar */
+            padding-right: 5px;
         }
         .med-item {
             background: #f4f7f9;
@@ -121,7 +121,7 @@
             margin: 8px 0;
             display: inline-block;
         }
-        .med-time { color: #555; font-size: 0.9em; margin-bottom: 12px; }
+        .med-time { color: #555; font-size: 0.9em; margin-bottom: 12px; font-variant-numeric: tabular-nums; }
         .med-actions { display: flex; gap: 8px; justify-content: space-between; }
         .action-btn { flex: 1; padding: 8px 10px; font-size: 14px; border-radius: 6px; }
         .take-btn { background: #28a745; color: white; border: none; cursor: pointer;}
@@ -207,6 +207,9 @@
     <header>
         <h1>💊 MedTrack</h1>
         <p class="subtitle">Smart Medication Reminder & Interaction Checker</p>
+        <button id="enableNotifications" class="btn-secondary" style="width: auto; margin-top: 10px; font-size: 0.8em; padding: 8px 16px;">
+            🔔 Enable Browser Alerts
+        </button>
     </header>
 
     <div id="alertContainer"></div>
@@ -277,6 +280,11 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="dosagesPerDay">Dosages Per Day (Optional)</label>
+                    <input type="number" id="dosagesPerDay" name="dosagesPerDay" min="1" max="24" value="1" placeholder="e.g., 2 for twice daily">
+                </div>
+
+                <div class="form-group">
                     <div class="checkbox-group">
                         <input type="checkbox" id="foodSensitive" name="foodSensitive">
                         <label for="foodSensitive" style="margin-bottom: 0;">Food Sensitive (Decorator Pattern)</label>
@@ -322,6 +330,10 @@
                     <option value="Inhaler">Inhaler</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label for="editDosagesPerDay">Dosages Per Day</label>
+                <input type="number" id="editDosagesPerDay" min="1" max="24" value="1">
+            </div>
             <div class="modal-actions">
                 <button type="submit">Save Changes</button>
                 <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
@@ -335,7 +347,6 @@
     <span id="connectionMessage">Connecting to server...</span>
 </div>
 
-<!-- Link to external JS -->
 <script src="js/app.js"></script>
 </body>
 </html>

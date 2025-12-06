@@ -14,59 +14,46 @@ public class BaseMedication implements Medication {
     private Long id;
 
     private String name;
-    private  String dosageForm;
+    private String dosageForm;
     private LocalDateTime nextDueTime;
 
-    public BaseMedication() {
-    }
+    // Feature: Dosages per day (Default 1)
+    private int dosagesPerDay = 1;
 
-    public BaseMedication(String name, String dosageForm) {
+    public BaseMedication() {}
+
+    public BaseMedication(String name, String dosageForm, int dosagesPerDay) {
         this.name = name;
         this.dosageForm = dosageForm;
-        // FIX: Set due time to 10 seconds from now, not 8 hours,
-        // so the ReminderSystem (Observer) triggers almost instantly.
+        this.dosagesPerDay = dosagesPerDay;
+        // Default: due in 10 seconds for demo purposes
         this.nextDueTime = LocalDateTime.now().plusSeconds(10);
     }
 
-    @Override
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
+    // Compatibility constructor
+    public BaseMedication(String name, String dosageForm) {
+        this(name, dosageForm, 1);
     }
 
     @Override
-    public String getName() {
-        return name;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
     @Override
-    public String getDosageForm() {
-        return dosageForm;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
     @Override
-    public String getAttributes() {
-        return "Standard";
-    }
+    public String getDosageForm() { return dosageForm; }
+    public void setDosageForm(String dosageForm) { this.dosageForm = dosageForm; }
 
     @Override
-    public LocalDateTime getNextDueTime() {
-        return nextDueTime;
-    }
+    public String getAttributes() { return "Standard"; }
 
-    public void setNextDueTime(LocalDateTime nextDueTime) {
-        this.nextDueTime = nextDueTime;
-    }
+    @Override
+    public LocalDateTime getNextDueTime() { return nextDueTime; }
+    public void setNextDueTime(LocalDateTime nextDueTime) { this.nextDueTime = nextDueTime; }
 
-    // Setters for JPA/Hibernate
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setDosageForm(String dosageForm) {
-        this.dosageForm = dosageForm;
-    }
+    public int getDosagesPerDay() { return dosagesPerDay; }
+    public void setDosagesPerDay(int dosagesPerDay) { this.dosagesPerDay = dosagesPerDay; }
 }

@@ -1,4 +1,4 @@
-package org.ooad.server.controller; // Correct Package!
+package org.ooad.server.controller;
 
 import org.ooad.server.command.MedicationCommand;
 import org.ooad.server.command.SnoozeCommand;
@@ -32,19 +32,23 @@ public class MedicationController {
         return medicationService.getAllMedications();
     }
 
+    // Updated to accept dosagesPerDay
     @PostMapping
     public BaseMedication addMedication(@RequestParam String name,
                                         @RequestParam String dosageForm,
-                                        @RequestParam(defaultValue = "false") boolean foodSensitive) {
-        return medicationService.addMedication(name, dosageForm, foodSensitive);
+                                        @RequestParam(defaultValue = "false") boolean foodSensitive,
+                                        @RequestParam(defaultValue = "1") int dosagesPerDay) {
+        return medicationService.addMedication(name, dosageForm, foodSensitive, dosagesPerDay);
     }
 
+    // Updated to accept dosagesPerDay
     @PutMapping("/{id}")
     public ResponseEntity<BaseMedication> updateMedication(@PathVariable Long id,
                                                            @RequestParam String name,
-                                                           @RequestParam String dosageForm) {
+                                                           @RequestParam String dosageForm,
+                                                           @RequestParam(defaultValue = "1") int dosagesPerDay) {
         try {
-            BaseMedication updatedMed = medicationService.updateMedication(id, name, dosageForm);
+            BaseMedication updatedMed = medicationService.updateMedication(id, name, dosageForm, dosagesPerDay);
             return ResponseEntity.ok(updatedMed);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
@@ -61,11 +65,8 @@ public class MedicationController {
         }
     }
 
-    // COMMAND PATTERN ENDPOINTS (Existing)
-
     @PostMapping("/{id}/take")
     public String takeMedication(@PathVariable Long id) {
-        // Client for the Command Pattern
         System.out.println("Received Take Command for ID: " + id);
         new TakeCommand(medicationService, id).execute();
         return "Taken successfully";
@@ -73,7 +74,6 @@ public class MedicationController {
 
     @PostMapping("/{id}/snooze")
     public String snoozeMedication(@PathVariable Long id) {
-        // Client for the Command Pattern
         System.out.println("Received Snooze Command for ID: " + id);
         new SnoozeCommand(medicationService, id).execute();
         return "Snoozed successfully";

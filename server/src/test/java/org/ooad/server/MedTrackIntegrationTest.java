@@ -24,7 +24,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@Transactional // Rolls back DB changes after each test
+@Transactional
 public class MedTrackIntegrationTest {
 
     @Autowired
@@ -62,10 +62,10 @@ public class MedTrackIntegrationTest {
 
     @Test
     void testStrategyPatternInteractionCheck() {
-        Medication med1 = new BaseMedication("Warfarin", "Pill");
+        Medication med1 = new BaseMedication("Warfarin", "Pill", 1);
         List<Medication> existingMeds = List.of(med1);
 
-        Medication newMed = new BaseMedication("Aspirin", "Tablet");
+        Medication newMed = new BaseMedication("Aspirin", "Tablet", 1);
 
         String warning = interactionStrategy.checkInteraction(newMed, existingMeds);
 
@@ -75,7 +75,8 @@ public class MedTrackIntegrationTest {
 
     @Test
     void testCommandPatternTakeAction() {
-        BaseMedication med = medicationService.addMedication("Vitamin C", "Tablet", false);
+        // Use 4 arguments: name, form, foodSensitive, dosagesPerDay
+        BaseMedication med = medicationService.addMedication("Vitamin C", "Tablet", false, 1);
         LocalDateTime originalTime = med.getNextDueTime();
         Long id = med.getId();
 
@@ -88,7 +89,8 @@ public class MedTrackIntegrationTest {
 
     @Test
     void testCommandPatternSnoozeAction() {
-        BaseMedication med = medicationService.addMedication("Allergy Med", "Pill", false);
+        // Use 4 arguments
+        BaseMedication med = medicationService.addMedication("Allergy Med", "Pill", false, 1);
         LocalDateTime originalTime = med.getNextDueTime();
         Long id = med.getId();
 
@@ -101,7 +103,7 @@ public class MedTrackIntegrationTest {
 
     @Test
     void testDeleteMedication() {
-        BaseMedication med = medicationService.addMedication("To Delete", "Pill", false);
+        BaseMedication med = medicationService.addMedication("To Delete", "Pill", false, 1);
         Long id = med.getId();
 
         medicationService.deleteMedication(id);
@@ -112,14 +114,16 @@ public class MedTrackIntegrationTest {
 
     @Test
     void testUpdateMedication() {
-        BaseMedication med = medicationService.addMedication("Original Name", "Pill", false);
+        BaseMedication med = medicationService.addMedication("Original Name", "Pill", false, 1);
         Long id = med.getId();
 
-        medicationService.updateMedication(id, "Updated Name", "Syrup");
+        // Use 4 arguments for update: id, name, form, dosagesPerDay
+        medicationService.updateMedication(id, "Updated Name", "Syrup", 2);
 
         BaseMedication updatedMed = medicationRepository.findById(id).orElseThrow();
         assertEquals("Updated Name", updatedMed.getName());
         assertEquals("Syrup", updatedMed.getDosageForm());
+        assertEquals(2, updatedMed.getDosagesPerDay());
     }
 
     @Test
@@ -130,7 +134,7 @@ public class MedTrackIntegrationTest {
 
         assertNotNull(user.getId());
         assertEquals(username, user.getUsername());
-        assertNotEquals(password, user.getPassword()); // Password should be hashed
+        assertNotEquals(password, user.getPassword());
 
         boolean isValid = userService.validateUser(username, password);
         assertTrue(isValid);

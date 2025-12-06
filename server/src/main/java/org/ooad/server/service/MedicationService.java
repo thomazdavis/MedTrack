@@ -29,7 +29,8 @@ public class MedicationService {
         this.interactionStrategy = interactionStrategy;
     }
 
-    public BaseMedication addMedication(String name, String dosageForm, boolean isFoodSensitive) {
+    // Updated to accept dosagesPerDay
+    public BaseMedication addMedication(String name, String dosageForm, boolean isFoodSensitive, int dosagesPerDay) {
         Medication medication = medicationFactory.createMedication(name, dosageForm, isFoodSensitive);
 
         List<BaseMedication> existingEntities = medicationRepository.findAll();
@@ -46,26 +47,26 @@ public class MedicationService {
         if (medication instanceof BaseMedication) {
             baseMedication = (BaseMedication) medication;
         } else {
-            baseMedication = new BaseMedication(medication.getName(), medication.getDosageForm());
+            baseMedication = new BaseMedication(medication.getName(), medication.getDosageForm(), dosagesPerDay);
             baseMedication.setNextDueTime(medication.getNextDueTime());
         }
+
+        // Ensure dosagesPerDay is set if it came from a factory that didn't set it
+        baseMedication.setDosagesPerDay(dosagesPerDay);
 
         BaseMedication saved = medicationRepository.save(baseMedication);
         System.out.println("Saved medication: " + saved.getName() + " [" + medication.getAttributes() + "]");
         return saved;
     }
 
-    public BaseMedication updateMedication(Long id, String name, String dosageForm) {
+    public BaseMedication updateMedication(Long id, String name, String dosageForm, int dosagesPerDay) {
         Optional<BaseMedication> medOpt = medicationRepository.findById(id);
 
         if (medOpt.isPresent()) {
             BaseMedication med = medOpt.get();
             med.setName(name);
             med.setDosageForm(dosageForm);
-
-            // NOTE: Updating attributes (decorators) would require rebuilding the decorator chain
-            // and persisting the new attributes, which is complex for a simple JPA entity.
-            // For simplicity, we only update name and form here.
+            med.setDosagesPerDay(dosagesPerDay);
 
             medicationRepository.save(med);
             System.out.println("Updated medication ID " + id + " to Name: " + name);
@@ -87,12 +88,17 @@ public class MedicationService {
         return medicationRepository.findAll();
     }
 
+    // Updated Take Command logic to use dosagesPerDay
     public void takeMedication(Long id) {
         Optional<BaseMedication> medOpt = medicationRepository.findById(id);
         if (medOpt.isPresent()) {
             BaseMedication med = medOpt.get();
             System.out.println("Taking medication: " + med.getName());
-            med.setNextDueTime(LocalDateTime.now().plusHours(24));
+
+            // Calculate interval based on dosages per day (24 hours / dosages)
+            int hoursInterval = 24 / Math.max(1, med.getDosagesPerDay());
+
+            med.setNextDueTime(LocalDateTime.now().plusHours(hoursInterval));
             medicationRepository.save(med);
         }
     }
