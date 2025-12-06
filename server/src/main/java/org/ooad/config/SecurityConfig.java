@@ -21,6 +21,7 @@ public class SecurityConfig {
                 // Allow all API access for testing Design Patterns
                 .requestMatchers(new AntPathRequestMatcher("/api/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/**")).permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
         );
 
         http.httpBasic(basic -> basic.disable());
