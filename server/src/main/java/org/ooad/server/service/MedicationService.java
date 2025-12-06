@@ -30,12 +30,9 @@ public class MedicationService {
     }
 
     public BaseMedication addMedication(String name, String dosageForm, boolean isFoodSensitive) {
-        // Create decorated medication
         Medication medication = medicationFactory.createMedication(name, dosageForm, isFoodSensitive);
 
-        // Check for interactions (Strategy Pattern)
         List<BaseMedication> existingEntities = medicationRepository.findAll();
-        // Convert entities to Medication interface list for the strategy
         List<Medication> existingMeds = existingEntities.stream()
                 .map(m -> (Medication) m)
                 .collect(Collectors.toList());
@@ -45,8 +42,6 @@ public class MedicationService {
             System.err.println("WARNING: " + warning);
         }
 
-        // Persist
-        // Extract data from the decorated object to save the entity
         BaseMedication baseMedication;
         if (medication instanceof BaseMedication) {
             baseMedication = (BaseMedication) medication;
@@ -60,6 +55,34 @@ public class MedicationService {
         return saved;
     }
 
+    public BaseMedication updateMedication(Long id, String name, String dosageForm) {
+        Optional<BaseMedication> medOpt = medicationRepository.findById(id);
+
+        if (medOpt.isPresent()) {
+            BaseMedication med = medOpt.get();
+            med.setName(name);
+            med.setDosageForm(dosageForm);
+
+            // NOTE: Updating attributes (decorators) would require rebuilding the decorator chain
+            // and persisting the new attributes, which is complex for a simple JPA entity.
+            // For simplicity, we only update name and form here.
+
+            medicationRepository.save(med);
+            System.out.println("Updated medication ID " + id + " to Name: " + name);
+            return med;
+        }
+        throw new IllegalArgumentException("Medication with ID " + id + " not found.");
+    }
+
+    public void deleteMedication(Long id) {
+        if (medicationRepository.existsById(id)) {
+            medicationRepository.deleteById(id);
+            System.out.println("Deleted medication ID " + id);
+        } else {
+            throw new IllegalArgumentException("Medication with ID " + id + " not found for deletion.");
+        }
+    }
+
     public List<BaseMedication> getAllMedications() {
         return medicationRepository.findAll();
     }
@@ -69,7 +92,7 @@ public class MedicationService {
         if (medOpt.isPresent()) {
             BaseMedication med = medOpt.get();
             System.out.println("Taking medication: " + med.getName());
-            med.setNextDueTime(LocalDateTime.now().plusHours(24)); // Advance 24h
+            med.setNextDueTime(LocalDateTime.now().plusHours(24));
             medicationRepository.save(med);
         }
     }
@@ -79,7 +102,7 @@ public class MedicationService {
         if (medOpt.isPresent()) {
             BaseMedication med = medOpt.get();
             System.out.println("Snoozing medication: " + med.getName());
-            med.setNextDueTime(LocalDateTime.now().plusMinutes(15)); // Advance 15m
+            med.setNextDueTime(LocalDateTime.now().plusMinutes(15));
             medicationRepository.save(med);
         }
     }
