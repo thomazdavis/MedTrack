@@ -50,7 +50,7 @@ public class ReminderSystem {
     @Scheduled(fixedRate = 10000) // Runs every 10 seconds
     public void checkForDueReminders() {
         LocalDateTime now = LocalDateTime.now();
-        // In a real app, this query would be optimized (e.g., only check items due in the next minute)
+
         medicationRepository.findAll().stream()
                 .filter(med -> med.getNextDueTime() != null && med.getNextDueTime().isBefore(now))
                 .forEach(med -> {

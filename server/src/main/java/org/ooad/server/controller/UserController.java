@@ -34,8 +34,6 @@ public class UserController {
         boolean isValid = userService.validateUser(username, password);
 
         if (isValid) {
-            // NOTE: In a real app, you would generate and return a JWT token here.
-            // For this project, we simply confirm successful validation.
             return ResponseEntity.ok("Login successful for user: " + username);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password.");

@@ -39,7 +39,6 @@ public class MedicationController {
         return medicationService.addMedication(name, dosageForm, foodSensitive);
     }
 
-    // --- FEATURE 2: EDIT MEDICATION (PUT) ---
     @PutMapping("/{id}")
     public ResponseEntity<BaseMedication> updateMedication(@PathVariable Long id,
                                                            @RequestParam String name,
@@ -52,7 +51,6 @@ public class MedicationController {
         }
     }
 
-    // --- FEATURE 1: DELETE MEDICATION (DELETE) ---
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMedication(@PathVariable Long id) {
         try {

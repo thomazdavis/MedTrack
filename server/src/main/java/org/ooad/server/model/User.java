@@ -13,8 +13,8 @@ public class User {
     private Long id;
 
     private String username;
-    private String password; // Will store hashed password
-    private String roles = "USER"; // Default role
+    private String password;
+    private String roles = "USER";
 
     public User() {}
 
@@ -23,7 +23,6 @@ public class User {
         this.password = password;
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getUsername() { return username; }
