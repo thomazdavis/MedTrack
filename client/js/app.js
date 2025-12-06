@@ -57,10 +57,23 @@ function checkAndNotifyDueMeds(meds) {
 
 function sendBrowserNotification(med) {
     if (Notification.permission === "granted") {
-        new Notification("Medication Due!", {
+        console.log(`🔔 Triggering notification for ${med.name}`); // Debug log
+
+        const audio = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3');
+        audio.play().catch(e => console.log("Audio play failed (user interaction needed first):", e));
+
+        const notification = new Notification("Medication Due!", {
             body: `It's time to take your ${med.name} (${med.dosageForm})`,
-            icon: "https://cdn-icons-png.flaticon.com/512/822/822143.png" // Generic pill icon
+            icon: "https://cdn-icons-png.flaticon.com/512/822/822143.png",
+            requireInteraction: true
         });
+
+        notification.onclick = function() {
+            window.focus();
+            notification.close();
+        };
+    } else {
+        console.log("❌ Notifications not granted or denied.");
     }
 }
 

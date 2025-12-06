@@ -47,7 +47,7 @@ public class ReminderSystem {
      * Scheduled method to check for due medications every 10 seconds (for demo).
      * The @Scheduled annotation requires @EnableScheduling on the main application class.
      */
-    @Scheduled(fixedRate = 10000) // Runs every 10 seconds
+    @Scheduled(fixedRate = 10000)
     public void checkForDueReminders() {
         LocalDateTime now = LocalDateTime.now();
 
@@ -55,11 +55,7 @@ public class ReminderSystem {
                 .filter(med -> med.getNextDueTime() != null && med.getNextDueTime().isBefore(now))
                 .forEach(med -> {
                     notifyObservers(med);
-
-                    // Advance the due time (Crucial for persistence logic)
-                    // For demo, we just advance the time by a fixed amount (e.g., 24 hours)
-                    med.setNextDueTime(med.getNextDueTime().plusDays(1));
-                    medicationRepository.save(med); // Persist the updated time
                 });
     }
+
 }
