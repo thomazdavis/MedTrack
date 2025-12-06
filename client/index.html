@@ -60,7 +60,7 @@
             font-size: 15px;
             transition: border-color 0.3s;
         }
-        input[type="text"]:focus, select:focus { outline: none; border-color: #4b6cb7; box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.2); }
+        input[type="text"]:focus, input[type="password"]:focus, select:focus { outline: none; border-color: #4b6cb7; box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.2); }
         .checkbox-group { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
         input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
 
@@ -124,13 +124,13 @@
         .med-time { color: #555; font-size: 0.9em; margin-bottom: 12px; }
         .med-actions { display: flex; gap: 8px; justify-content: space-between; }
         .action-btn { flex: 1; padding: 8px 10px; font-size: 14px; border-radius: 6px; }
-        .take-btn { background: #28a745; }
+        .take-btn { background: #28a745; color: white; border: none; cursor: pointer;}
         .take-btn:hover { background: #218838; }
-        .snooze-btn { background: #ffc107; color: #333; }
+        .snooze-btn { background: #ffc107; color: #333; border: none; cursor: pointer;}
         .snooze-btn:hover { background: #e0a800; }
-        .edit-btn { background: #17a2b8; }
+        .edit-btn { background: #17a2b8; color: white; border: none; cursor: pointer;}
         .edit-btn:hover { background: #138496; }
-        .delete-btn { background: #dc3545; }
+        .delete-btn { background: #dc3545; color: white; border: none; cursor: pointer;}
         .delete-btn:hover { background: #c82333; }
 
         /* Alerts and Statuses */
@@ -317,6 +317,13 @@
     let pollingInterval = null;
     let isAuthenticated = false; // New state for login status
 
+    // Make functions globally available for onclick handlers
+    window.takeMedication = takeMedication;
+    window.snoozeMedication = snoozeMedication;
+    window.openEditModal = openEditModal;
+    window.closeEditModal = closeEditModal;
+    window.deleteMedication = deleteMedication;
+
     document.addEventListener('DOMContentLoaded', () => {
         setupAuthListeners();
         // Check local storage or session for existing auth status
@@ -415,7 +422,7 @@
     async function loadMedications() {
         if (!isAuthenticated) return;
         try {
-            showConnectionStatus('Attempting connection...', 'warning');
+            // showConnectionStatus('Attempting connection...', 'warning');
             const response = await fetch(`${API_BASE}/medications`);
             if (!response.ok) throw new Error('Failed to fetch medications');
 
@@ -431,7 +438,6 @@
 
     async function handleAddMedication(e) {
         e.preventDefault();
-        // ... existing implementation remains ...
         const formData = new FormData(e.target);
         const name = formData.get('name');
         const dosageForm = formData.get('dosageForm');
@@ -458,6 +464,44 @@
         } catch (error) {
             console.error('Error adding medication:', error);
             showAlert('Failed to add medication. Please ensure the backend is running.', 'error');
+        }
+    }
+
+    // --- COMMAND PATTERN EXECUTION ---
+
+    async function takeMedication(id, name) {
+        console.log(`Executing Take Command for ID: ${id}`);
+        try {
+            const response = await fetch(`${API_BASE}/medications/${id}/take`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) throw new Error('Failed to execute TAKE command');
+
+            // Command executes on backend, updating schedule. Polling refreshes UI.
+            showAlert(`✅ ${name} marked as taken! Schedule advanced (Command Pattern).`, 'success');
+            await loadMedications();
+        } catch (error) {
+            console.error('Error taking medication:', error);
+            showAlert('Failed to record medication. Please check connection.', 'error');
+        }
+    }
+
+    async function snoozeMedication(id, name) {
+        console.log(`Executing Snooze Command for ID: ${id}`);
+        try {
+            const response = await fetch(`${API_BASE}/medications/${id}/snooze`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) throw new Error('Failed to execute SNOOZE command');
+
+            // Command executes on backend, updating schedule. Polling refreshes UI.
+            showAlert(`⏰ ${name} snoozed for 15 minutes (Command Pattern).`, 'warning');
+            await loadMedications();
+        } catch (error) {
+            console.error('Error snoozing medication:', error);
+            showAlert('Failed to snooze medication. Please check connection.', 'error');
         }
     }
 
@@ -529,7 +573,6 @@
     function renderMedications() {
         const container = document.getElementById('medicationsList');
         if (medications.length === 0) {
-            // ... (empty state rendering) ...
             container.innerHTML = `
                     <div class="empty-state">
                         <div class="icon">💊</div>
@@ -547,6 +590,7 @@
             const isDue = dueTime <= now;
             const timeStr = formatTimeUntil(dueTime);
 
+            // IMPORTANT: Using window.takeMedication explicitly
             return `
                     <div class="med-item">
                         <div class="med-header">
@@ -558,10 +602,10 @@
                                 <div class="med-form">${med.dosageForm}</div>
                             </div>
                             <div class="med-actions">
-                                <button class="action-btn edit-btn" title="Edit" onclick="openEditModal(${med.id}, '${med.name}', '${med.dosageForm}')">
+                                <button class="action-btn edit-btn" title="Edit" onclick="window.openEditModal(${med.id}, '${med.name}', '${med.dosageForm}')">
                                     ⚙️
                                 </button>
-                                <button class="action-btn delete-btn" title="Delete" onclick="deleteMedication(${med.id}, '${med.name}')">
+                                <button class="action-btn delete-btn" title="Delete" onclick="window.deleteMedication(${med.id}, '${med.name}')">
                                     🗑️
                                 </button>
                             </div>
@@ -571,10 +615,10 @@
                             ${isDue ? '🔔 DUE NOW (Observer Event)' : `⏱️ Next dose: ${timeStr}`}
                         </div>
                         <div class="med-actions" style="margin-top: 5px; gap: 12px; justify-content: start;">
-                            <button class="action-btn take-btn" onclick="takeMedication(${med.id}, '${med.name}')">
+                            <button class="action-btn take-btn" onclick="window.takeMedication(${med.id}, '${med.name}')">
                                 ✓ Take
                             </button>
-                            <button class="action-btn snooze-btn" onclick="snoozeMedication(${med.id}, '${med.name}')">
+                            <button class="action-btn snooze-btn" onclick="window.snoozeMedication(${med.id}, '${med.name}')">
                                 ⏰ Snooze
                             </button>
                         </div>

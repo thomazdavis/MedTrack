@@ -68,6 +68,7 @@ public class MedicationController {
     @PostMapping("/{id}/take")
     public String takeMedication(@PathVariable Long id) {
         // Client for the Command Pattern
+        System.out.println("Received Take Command for ID: " + id);
         new TakeCommand(medicationService, id).execute();
         return "Taken successfully";
     }
@@ -75,6 +76,7 @@ public class MedicationController {
     @PostMapping("/{id}/snooze")
     public String snoozeMedication(@PathVariable Long id) {
         // Client for the Command Pattern
+        System.out.println("Received Snooze Command for ID: " + id);
         new SnoozeCommand(medicationService, id).execute();
         return "Snoozed successfully";
     }
