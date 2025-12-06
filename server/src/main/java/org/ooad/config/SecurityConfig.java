@@ -1,4 +1,4 @@
-package org.ooad.config;
+package org.ooad.server.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,21 +15,37 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+        // 1. Disable CSRF: Required for stateless JWT-based REST APIs.
         http.csrf(csrf -> csrf.disable());
 
+        // 2. Configure Authorization Rules:
         http.authorizeHttpRequests(auth -> auth
-                // Allow all API access for testing Design Patterns
+                // Public Endpoints (accessible without token)
+                .requestMatchers(
+                        new AntPathRequestMatcher("/api/status"),
+                        new AntPathRequestMatcher("/api/register"),
+                        new AntPathRequestMatcher("/api/login")
+                ).permitAll()
+
+                // Allow all API endpoints for now (for testing)
                 .requestMatchers(new AntPathRequestMatcher("/api/**")).permitAll()
+
+                // Allow all frontend files (HTML, JS, CSS) to be served
                 .requestMatchers(new AntPathRequestMatcher("/**")).permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
+
+                // Default: deny everything else
+                .anyRequest().authenticated()
         );
 
-        http.httpBasic(basic -> basic.disable());
+        // Disable default login mechanisms as we will use a custom API endpoint
+        http.httpBasic(httpBasic -> httpBasic.disable());
         http.formLogin(form -> form.disable());
 
         return http.build();
     }
 
+    // 3. Password Encoder Bean: Required for securely hashing passwords.
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
