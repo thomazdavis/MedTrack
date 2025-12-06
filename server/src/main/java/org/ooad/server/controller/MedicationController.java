@@ -1,109 +1,81 @@
-package org.ooad.server.service;
+package org.ooad.server.controller; // Correct Package!
 
-import org.ooad.server.factory.MedicationFactory;
+import org.ooad.server.command.MedicationCommand;
+import org.ooad.server.command.SnoozeCommand;
+import org.ooad.server.command.TakeCommand;
 import org.ooad.server.model.BaseMedication;
-import org.ooad.server.model.Medication;
-import org.ooad.server.repository.MedicationRepository;
-import org.ooad.server.strategy.InteractionStrategy;
+import org.ooad.server.service.MedicationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
-@Service
-public class MedicationService {
+/**
+ * REST Controller.
+ * Handles Medication CRUD and Command (Take/Snooze) execution.
+ */
+@RestController
+@RequestMapping("/api/medications")
+@CrossOrigin(origins = "*")
+public class MedicationController {
 
-    private final MedicationRepository medicationRepository;
-    private final MedicationFactory medicationFactory;
-    private final InteractionStrategy interactionStrategy;
+    private final MedicationService medicationService;
 
     @Autowired
-    public MedicationService(MedicationRepository medicationRepository,
-                             MedicationFactory medicationFactory,
-                             InteractionStrategy interactionStrategy) {
-        this.medicationRepository = medicationRepository;
-        this.medicationFactory = medicationFactory;
-        this.interactionStrategy = interactionStrategy;
+    public MedicationController(MedicationService medicationService) {
+        this.medicationService = medicationService;
     }
 
-    public BaseMedication addMedication(String name, String dosageForm, boolean isFoodSensitive) {
-        Medication medication = medicationFactory.createMedication(name, dosageForm, isFoodSensitive);
-
-        List<BaseMedication> existingEntities = medicationRepository.findAll();
-        List<Medication> existingMeds = existingEntities.stream()
-                .map(m -> (Medication) m)
-                .collect(Collectors.toList());
-
-        String warning = interactionStrategy.checkInteraction(medication, existingMeds);
-        if (warning != null) {
-            System.err.println("WARNING: " + warning);
-        }
-
-        BaseMedication baseMedication;
-        if (medication instanceof BaseMedication) {
-            baseMedication = (BaseMedication) medication;
-        } else {
-            baseMedication = new BaseMedication(medication.getName(), medication.getDosageForm());
-            baseMedication.setNextDueTime(medication.getNextDueTime());
-        }
-
-        BaseMedication saved = medicationRepository.save(baseMedication);
-        System.out.println("Saved medication: " + saved.getName() + " [" + medication.getAttributes() + "]");
-        return saved;
-    }
-
-    public BaseMedication updateMedication(Long id, String name, String dosageForm) {
-        Optional<BaseMedication> medOpt = medicationRepository.findById(id);
-
-        if (medOpt.isPresent()) {
-            BaseMedication med = medOpt.get();
-            med.setName(name);
-            med.setDosageForm(dosageForm);
-
-            // NOTE: Updating attributes (decorators) would require rebuilding the decorator chain
-            // and persisting the new attributes, which is complex for a simple JPA entity.
-            // For simplicity, we only update name and form here.
-
-            medicationRepository.save(med);
-            System.out.println("Updated medication ID " + id + " to Name: " + name);
-            return med;
-        }
-        throw new IllegalArgumentException("Medication with ID " + id + " not found.");
-    }
-
-    public void deleteMedication(Long id) {
-        if (medicationRepository.existsById(id)) {
-            medicationRepository.deleteById(id);
-            System.out.println("Deleted medication ID " + id);
-        } else {
-            throw new IllegalArgumentException("Medication with ID " + id + " not found for deletion.");
-        }
-    }
-
+    @GetMapping
     public List<BaseMedication> getAllMedications() {
-        return medicationRepository.findAll();
+        return medicationService.getAllMedications();
     }
 
-    public void takeMedication(Long id) {
-        Optional<BaseMedication> medOpt = medicationRepository.findById(id);
-        if (medOpt.isPresent()) {
-            BaseMedication med = medOpt.get();
-            System.out.println("Taking medication: " + med.getName());
-            med.setNextDueTime(LocalDateTime.now().plusHours(24));
-            medicationRepository.save(med);
+    @PostMapping
+    public BaseMedication addMedication(@RequestParam String name,
+                                        @RequestParam String dosageForm,
+                                        @RequestParam(defaultValue = "false") boolean foodSensitive) {
+        return medicationService.addMedication(name, dosageForm, foodSensitive);
+    }
+
+    // --- FEATURE 2: EDIT MEDICATION (PUT) ---
+    @PutMapping("/{id}")
+    public ResponseEntity<BaseMedication> updateMedication(@PathVariable Long id,
+                                                           @RequestParam String name,
+                                                           @RequestParam String dosageForm) {
+        try {
+            BaseMedication updatedMed = medicationService.updateMedication(id, name, dosageForm);
+            return ResponseEntity.ok(updatedMed);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
-    public void snoozeMedication(Long id) {
-        Optional<BaseMedication> medOpt = medicationRepository.findById(id);
-        if (medOpt.isPresent()) {
-            BaseMedication med = medOpt.get();
-            System.out.println("Snoozing medication: " + med.getName());
-            med.setNextDueTime(LocalDateTime.now().plusMinutes(15));
-            medicationRepository.save(med);
+    // --- FEATURE 1: DELETE MEDICATION (DELETE) ---
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMedication(@PathVariable Long id) {
+        try {
+            medicationService.deleteMedication(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         }
+    }
+
+    // COMMAND PATTERN ENDPOINTS (Existing)
+
+    @PostMapping("/{id}/take")
+    public String takeMedication(@PathVariable Long id) {
+        // Client for the Command Pattern
+        new TakeCommand(medicationService, id).execute();
+        return "Taken successfully";
+    }
+
+    @PostMapping("/{id}/snooze")
+    public String snoozeMedication(@PathVariable Long id) {
+        // Client for the Command Pattern
+        new SnoozeCommand(medicationService, id).execute();
+        return "Snoozed successfully";
     }
 }
