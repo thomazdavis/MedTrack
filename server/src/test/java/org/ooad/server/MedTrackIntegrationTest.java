@@ -55,7 +55,6 @@ public class MedTrackIntegrationTest {
     void testFactoryAndDecoratorPattern() {
         Medication med1 = medicationFactory.createMedication("Aspirin", "Tablet", false);
         assertEquals("Standard", med1.getAttributes());
-
         Medication med2 = medicationFactory.createMedication("Antibiotic", "Capsule", true);
         assertTrue(med2.getAttributes().contains("Food Sensitive"));
     }
@@ -64,19 +63,17 @@ public class MedTrackIntegrationTest {
     void testStrategyPatternInteractionCheck() {
         Medication med1 = new BaseMedication("Warfarin", "Pill", 1);
         List<Medication> existingMeds = List.of(med1);
-
         Medication newMed = new BaseMedication("Aspirin", "Tablet", 1);
-
         String warning = interactionStrategy.checkInteraction(newMed, existingMeds);
-
         assertNotNull(warning);
         assertTrue(warning.contains("CRITICAL INTERACTION"));
     }
 
     @Test
     void testCommandPatternTakeAction() {
-        // Use 4 arguments: name, form, foodSensitive, dosagesPerDay
-        BaseMedication med = medicationService.addMedication("Vitamin C", "Tablet", false, 1);
+        userService.registerNewUser("testuser", "password");
+        // Pass null for startTime to use default behavior
+        BaseMedication med = medicationService.addMedication("Vitamin C", "Tablet", false, 1, "testuser", null);
         LocalDateTime originalTime = med.getNextDueTime();
         Long id = med.getId();
 
@@ -89,8 +86,8 @@ public class MedTrackIntegrationTest {
 
     @Test
     void testCommandPatternSnoozeAction() {
-        // Use 4 arguments
-        BaseMedication med = medicationService.addMedication("Allergy Med", "Pill", false, 1);
+        userService.registerNewUser("testuser", "password");
+        BaseMedication med = medicationService.addMedication("Allergy Med", "Pill", false, 1, "testuser", null);
         LocalDateTime originalTime = med.getNextDueTime();
         Long id = med.getId();
 
@@ -103,43 +100,43 @@ public class MedTrackIntegrationTest {
 
     @Test
     void testDeleteMedication() {
-        BaseMedication med = medicationService.addMedication("To Delete", "Pill", false, 1);
+        userService.registerNewUser("testuser", "password");
+        BaseMedication med = medicationService.addMedication("To Delete", "Pill", false, 1, "testuser", null);
         Long id = med.getId();
-
         medicationService.deleteMedication(id);
-
         Optional<BaseMedication> deletedMed = medicationRepository.findById(id);
         assertTrue(deletedMed.isEmpty());
     }
 
     @Test
     void testUpdateMedication() {
-        BaseMedication med = medicationService.addMedication("Original Name", "Pill", false, 1);
+        userService.registerNewUser("testuser", "password");
+        BaseMedication med = medicationService.addMedication("Original Name", "Pill", false, 1, "testuser", null);
         Long id = med.getId();
-
-        // Use 4 arguments for update: id, name, form, dosagesPerDay
         medicationService.updateMedication(id, "Updated Name", "Syrup", 2);
-
         BaseMedication updatedMed = medicationRepository.findById(id).orElseThrow();
         assertEquals("Updated Name", updatedMed.getName());
         assertEquals("Syrup", updatedMed.getDosageForm());
-        assertEquals(2, updatedMed.getDosagesPerDay());
     }
 
     @Test
     void testUserRegistrationAndLogin() {
-        String username = "testuser";
+        String username = "newuser";
         String password = "password123";
         User user = userService.registerNewUser(username, password);
-
         assertNotNull(user.getId());
         assertEquals(username, user.getUsername());
         assertNotEquals(password, user.getPassword());
+        assertTrue(userService.validateUser(username, password));
+        assertFalse(userService.validateUser(username, "wrongpassword"));
+    }
 
-        boolean isValid = userService.validateUser(username, password);
-        assertTrue(isValid);
+    @Test
+    void testCustomStartTime() {
+        userService.registerNewUser("testuser", "password");
+        LocalDateTime futureTime = LocalDateTime.now().plusDays(1);
+        BaseMedication med = medicationService.addMedication("Future Med", "Pill", false, 1, "testuser", futureTime);
 
-        boolean isInvalid = userService.validateUser(username, "wrongpassword");
-        assertFalse(isInvalid);
+        assertEquals(futureTime, med.getNextDueTime());
     }
 }

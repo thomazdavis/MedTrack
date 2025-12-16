@@ -11,6 +11,11 @@ public class FoodSensitiveMedication extends MedicationDecorator {
 
     @Override
     public String getAttributes() {
-        return decoratedMedication.getAttributes() + ", Food Sensitive (Take with food)";
+        String baseAttributes = decoratedMedication.getAttributes();
+        if ("Standard".equals(baseAttributes)) {
+            return "Food Sensitive (Take with food)";
+        } else {
+            return baseAttributes + ", Food Sensitive (Take with food)";
+        }
     }
 }

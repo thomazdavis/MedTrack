@@ -1,20 +1,17 @@
 package org.ooad.server.controller;
 
-import org.ooad.server.command.MedicationCommand;
 import org.ooad.server.command.SnoozeCommand;
 import org.ooad.server.command.TakeCommand;
 import org.ooad.server.model.BaseMedication;
 import org.ooad.server.service.MedicationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * REST Controller.
- * Handles Medication CRUD and Command (Take/Snooze) execution.
- */
 @RestController
 @RequestMapping("/api/medications")
 @CrossOrigin(origins = "*")
@@ -28,16 +25,21 @@ public class MedicationController {
     }
 
     @GetMapping
-    public List<BaseMedication> getAllMedications() {
-        return medicationService.getAllMedications();
+    public List<BaseMedication> getMedications(@RequestParam String username) {
+        return medicationService.getUserMedications(username);
     }
 
     @PostMapping
     public BaseMedication addMedication(@RequestParam String name,
                                         @RequestParam String dosageForm,
                                         @RequestParam(defaultValue = "false") boolean foodSensitive,
-                                        @RequestParam(defaultValue = "1") int dosagesPerDay) {
-        return medicationService.addMedication(name, dosageForm, foodSensitive, dosagesPerDay);
+                                        @RequestParam(defaultValue = "1") int dosagesPerDay,
+                                        @RequestParam String username,
+                                        // Optional Start Time (ISO Date Time format)
+                                        @RequestParam(required = false)
+                                        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime) {
+
+        return medicationService.addMedication(name, dosageForm, foodSensitive, dosagesPerDay, username, startTime);
     }
 
     @PutMapping("/{id}")
@@ -65,14 +67,12 @@ public class MedicationController {
 
     @PostMapping("/{id}/take")
     public String takeMedication(@PathVariable Long id) {
-        System.out.println("Received Take Command for ID: " + id);
         new TakeCommand(medicationService, id).execute();
         return "Taken successfully";
     }
 
     @PostMapping("/{id}/snooze")
     public String snoozeMedication(@PathVariable Long id) {
-        System.out.println("Received Snooze Command for ID: " + id);
         new SnoozeCommand(medicationService, id).execute();
         return "Snoozed successfully";
     }

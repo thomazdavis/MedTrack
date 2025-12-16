@@ -16,8 +16,13 @@ public class BaseMedication implements Medication {
     private String name;
     private String dosageForm;
     private LocalDateTime nextDueTime;
-
     private int dosagesPerDay = 1;
+
+    // Store attributes (e.g., "Food Sensitive")
+    private String attributes = "Standard";
+
+    // User ID to separate lists
+    private Long userId;
 
     public BaseMedication() {}
 
@@ -45,7 +50,8 @@ public class BaseMedication implements Medication {
     public void setDosageForm(String dosageForm) { this.dosageForm = dosageForm; }
 
     @Override
-    public String getAttributes() { return "Standard"; }
+    public String getAttributes() { return attributes; }
+    public void setAttributes(String attributes) { this.attributes = attributes; }
 
     @Override
     public LocalDateTime getNextDueTime() { return nextDueTime; }
@@ -53,4 +59,7 @@ public class BaseMedication implements Medication {
 
     public int getDosagesPerDay() { return dosagesPerDay; }
     public void setDosagesPerDay(int dosagesPerDay) { this.dosagesPerDay = dosagesPerDay; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 }
